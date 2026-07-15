@@ -90,9 +90,9 @@ export default function LandingGenerator() {
                 <p className="text-sm text-gray-500">{page.views} vues • {page.conversions} conversions</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => window.open(`/api/landing/preview/${page.slug}`, '_blank')} className="btn-ghost py-2 px-3">
-                  <Eye size={16} />
-                </button>
+                <button onClick={() => window.open(`https://cod-platform-production-9e18.up.railway.app/api/landing/preview/${page.slug}`, '_blank')} className="btn-ghost py-2 px-3">
+  <Eye size={16} />
+</button>
                 <button onClick={() => copyLink(page.slug)} className="btn-ghost py-2 px-3">
                   <Copy size={16} />
                 </button>
