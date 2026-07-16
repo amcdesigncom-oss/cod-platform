@@ -7,34 +7,55 @@ const router = express.Router();
 
 router.get('/stats', auth, async (req, res) => {
   try {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const thisWeek = new Date(today); thisWeek.setDate(thisWeek.getDate()-7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     const totalLeads = await Lead.countDocuments();
     const todayLeads = await Lead.countDocuments({ createdAt: { $gte: today } });
     const confirmedLeads = await Lead.countDocuments({ status: 'confirmed' });
-    const conversionRate = totalLeads > 0 ? Math.round((confirmedLeads/totalLeads)*100) : 0;
+    const conversionRate = totalLeads > 0 ? Math.round((confirmedLeads / totalLeads) * 100) : 0;
     
     const revenue = await Lead.aggregate([
       { $match: { status: 'confirmed' } },
       { $group: { _id: null, total: { $sum: '$totalPrice' } } }
     ]);
     
+    // ⭐ AJOUT : Stats par statut
+    const stats = await Lead.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+    const byStatus = {};
+    stats.forEach(s => byStatus[s._id] = s.count);
+    
     const confirmerStats = await User.find({ role: 'confirmer' }).select('name performance');
     
     const dailyStats = await Lead.aggregate([
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, leads: { $sum: 1 }, confirmed: { $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] } } } },
-      { $sort: { _id: -1 } }, { $limit: 30 }
+      { 
+        $group: { 
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, 
+          leads: { $sum: 1 }, 
+          confirmed: { $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] } } 
+        } 
+      },
+      { $sort: { _id: -1 } }, 
+      { $limit: 30 }
     ]);
     
     res.json({
-  overview: { totalLeads, todayLeads, confirmedLeads, conversionRate, totalRevenue: revenue[0]?.total || 0 },
-  byStatus: statusMap,
-  confirmerStats,
-  dailyStats
-});
+      overview: { 
+        totalLeads, 
+        todayLeads, 
+        confirmedLeads, 
+        conversionRate, 
+        totalRevenue: (revenue[0] && revenue[0].total) || 0 
+      },
+      byStatus,  // ⭐ AJOUTÉ
+      confirmerStats,
+      dailyStats
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 });
 
