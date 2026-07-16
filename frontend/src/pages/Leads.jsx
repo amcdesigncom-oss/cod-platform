@@ -82,11 +82,10 @@ export default function Leads() {
     
     try {
       await assignLead(lead._id, newConfirmerId);
-      alert('Lead réassigné avec succès !');
-      refetch();
+      // Succès silencieux, le select garde la nouvelle valeur
     } catch (err) {
-      alert('Erreur lors de la réassignation');
-      console.error(err);
+      console.error('Erreur réassignation:', err);
+      e.target.value = lead.assignedTo?._id || ''; // Reset en cas d'erreur
     }
   }}
 >
