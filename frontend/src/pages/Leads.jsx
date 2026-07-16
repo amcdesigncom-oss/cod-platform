@@ -15,17 +15,21 @@ const statusFilters = [
 
 export default function Leads() {
   const [filter, setFilter] = useState('')
-  const { data: leads, loading, refetch } = useLeads(filter)
+  const { data: leadsData, loading, refetch } = useLeads(filter)
   const { data: confirmers } = useConfirmers()
+
+  // Utiliser les données directement, pas de state local
+  const leads = leadsData || []
 
   const handleStatusChange = async (id, status) => {
     await updateLeadStatus(id, status)
     refetch()
   }
 
-  const handleAssign = async (id, confirmerId) => {
-    await assignLead(id, confirmerId)
-    refetch()
+  const handleAssign = async (leadId, confirmerId) => {
+    if (!confirmerId) return
+    await assignLead(leadId, confirmerId)
+    refetch() // Rafraîchir les données
   }
 
   if (loading) return <div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>
@@ -61,7 +65,7 @@ export default function Leads() {
               </tr>
             </thead>
             <tbody>
-              {leads?.map(lead => (
+              {leads.map(lead => (
                 <tr key={lead._id} className="border-t border-dark-600 hover:bg-dark-700/50 transition-colors">
                   <td className="py-3 px-4 text-sm text-gray-400">{new Date(lead.createdAt).toLocaleDateString('fr')}</td>
                   <td className="py-3 px-4">
@@ -74,26 +78,15 @@ export default function Leads() {
                   <td className="py-3 px-4"><StatusBadge status={lead.status} /></td>
                   <td className="py-3 px-4">
                     <select 
-  className="bg-dark-700 border border-dark-600 rounded-lg px-2 py-1 text-sm text-white"
-  value={lead.assignedTo?._id || ''}
-  onChange={async (e) => {
-    const newConfirmerId = e.target.value;
-    if (!newConfirmerId) return;
-    
-    try {
-      await assignLead(lead._id, newConfirmerId);
-      // Succès silencieux, le select garde la nouvelle valeur
-    } catch (err) {
-      console.error('Erreur réassignation:', err);
-      e.target.value = lead.assignedTo?._id || ''; // Reset en cas d'erreur
-    }
-  }}
->
-  <option value="">Non assigné</option>
-  {confirmers?.map(c => (
-    <option key={c._id} value={c._id}>{c.name}</option>
-  ))}
-</select>
+                      className="bg-dark-700 border border-dark-600 rounded-lg px-2 py-1 text-sm text-white"
+                      value={lead.assignedTo?._id || ''}
+                      onChange={(e) => handleAssign(lead._id, e.target.value)}
+                    >
+                      <option value="">Non assigné</option>
+                      {confirmers?.map(c => (
+                        <option key={c._id} value={c._id}>{c.name}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex gap-1">
