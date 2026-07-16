@@ -73,10 +73,28 @@ export default function Leads() {
                   <td className="py-3 px-4 text-sm">{lead.wilaya}</td>
                   <td className="py-3 px-4"><StatusBadge status={lead.status} /></td>
                   <td className="py-3 px-4">
-                    <select className="bg-dark-700 border border-dark-600 rounded-lg px-2 py-1 text-sm" value={lead.assignedTo?._id || ''} onChange={e => handleAssign(lead._id, e.target.value)}>
-                      <option value="">Non assigné</option>
-                      {confirmers?.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-                    </select>
+                    <select 
+  className="bg-dark-700 border border-dark-600 rounded-lg px-2 py-1 text-sm text-white"
+  value={lead.assignedTo?._id || ''}
+  onChange={async (e) => {
+    const newConfirmerId = e.target.value;
+    if (!newConfirmerId) return;
+    
+    try {
+      await assignLead(lead._id, newConfirmerId);
+      alert('Lead réassigné avec succès !');
+      refetch();
+    } catch (err) {
+      alert('Erreur lors de la réassignation');
+      console.error(err);
+    }
+  }}
+>
+  <option value="">Non assigné</option>
+  {confirmers?.map(c => (
+    <option key={c._id} value={c._id}>{c.name}</option>
+  ))}
+</select>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex gap-1">
