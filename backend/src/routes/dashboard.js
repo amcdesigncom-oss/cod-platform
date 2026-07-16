@@ -28,10 +28,11 @@ router.get('/stats', auth, async (req, res) => {
     ]);
     
     res.json({
-      overview: { totalLeads, todayLeads, confirmedLeads, conversionRate, totalRevenue: revenue[0]?.total || 0 },
-      confirmerStats,
-      dailyStats
-    });
+  overview: { totalLeads, todayLeads, confirmedLeads, conversionRate, totalRevenue: revenue[0]?.total || 0 },
+  byStatus: statusMap,
+  confirmerStats,
+  dailyStats
+});
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });
   }
