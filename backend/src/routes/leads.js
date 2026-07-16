@@ -96,5 +96,23 @@ router.put('/:id/status', auth, async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
-
+router.put('/:id/assign', auth, adminOnly, async (req, res) => {
+  try {
+    const { confirmerId } = req.body;
+    
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { assignedTo: confirmerId },
+      { new: true }
+    ).populate('assignedTo', 'name phone');
+    
+    if (!lead) {
+      return res.status(404).json({ message: 'Lead non trouvé' });
+    }
+    
+    res.json({ message: 'Lead assigné', lead });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
 module.exports = router;
