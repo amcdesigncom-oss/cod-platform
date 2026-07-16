@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLeads, updateLeadStatus, assignLead } from '../hooks/useApi'
 import { useConfirmers } from '../hooks/useApi'
 import StatusBadge from '../components/StatusBadge'
@@ -15,21 +15,47 @@ const statusFilters = [
 
 export default function Leads() {
   const [filter, setFilter] = useState('')
-  const { data: leadsData, loading, refetch } = useLeads(filter)
+  const { data: leadsData, loading } = useLeads(filter)
   const { data: confirmers } = useConfirmers()
-
-  // Utiliser les données directement, pas de state local
-  const leads = leadsData || []
+  
+  // State local pour les leads
+  const [leads, setLeads] = useState([])
+  
+  // Mettre à jour le state local quand les données arrivent
+  useEffect(() => {
+    if (leadsData) {
+      setLeads(leadsData)
+    }
+  }, [leadsData])
 
   const handleStatusChange = async (id, status) => {
     await updateLeadStatus(id, status)
-    refetch()
+    // Mettre à jour localement
+    setLeads(prev => prev.map(lead => 
+      lead._id === id ? { ...lead, status } : lead
+    ))
   }
 
   const handleAssign = async (leadId, confirmerId) => {
     if (!confirmerId) return
-    await assignLead(leadId, confirmerId)
-    refetch() // Rafraîchir les données
+    
+    // Trouver le nom du confirmer
+    const confirmer = confirmers?.find(c => c._id === confirmerId)
+    
+    // Mettre à jour localement AVANT l'appel API
+    setLeads(prev => prev.map(lead => 
+      lead._id === leadId 
+        ? { ...lead, assignedTo: { _id: confirmerId, name: confirmer?.name } } 
+        : lead
+    ))
+    
+    // Appel API en arrière-plan
+    try {
+      await assignLead(leadId, confirmerId)
+    } catch (err) {
+      console.error('Erreur:', err)
+      // En cas d'erreur, on pourrait recharger les données
+    }
   }
 
   if (loading) return <div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-2 border-accent border-t-transparent rounded-full" /></div>
